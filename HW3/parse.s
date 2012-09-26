@@ -10,10 +10,12 @@ start
 	MOV	r7, #0		; Set r7= 0
 	ADR	r2, STR1	; void* r2= address of STR1
 parse1
-	LDRB	r1, [r2], #1	; byte r1= *r2; ++r2
+	LDRB	r1, [r2], #1	; char r1= *(char*)r2; ++r2
+;exp	LDRB	r1, [r2]	; char r1= *(char*)r2;
 	CMP	r1, #0		; Check for null
 	BEQ	parse_done	; While (char !null)
 	BL	check_vowel	; Call check_vowel
+;exp	ADD	r2, r2, #1	; Experimental: ++r2
 	B	parse1		; Loop back
 
 parse_done
@@ -37,13 +39,12 @@ check_vowel
 	TEQNE	r1, #'i'	; r1 == 'i'
 	TEQNE	r1, #'u'	; r1 == 'u'
 	TEQNE	r1, #'y'	; r1 == 'y'
+;	ADDEQ	r3, r1, #&20	; r3= r1 + 0x20 ; Make uppercase
 	MOVEQ	r3, #'*'	; test
 	MOVNE   r3, r1
 	SUB	r4, r2, #1	; void* r4= r2 - 1
-
+;	STRB	r3, [r2]	; *r2= r3 ; Memory at r2 = r3
 	STRB	r3, [r4]
-;	ADDEQ	r3, r1, #&20	; r3= r1 + 0x20 ; Make uppercase
-;	STREQ  	r3, [r2]	; r2= r3
 	ADDEQ	r7, r7, #1	; Increment vowel counter
 
 	TEQ	r1, #'A'	; r1 == 'A'
