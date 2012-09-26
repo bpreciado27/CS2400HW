@@ -3,16 +3,16 @@ SWI_WriteC	EQU 	&0	; Output character in r0
 SWI_Exit	EQU	&11	; Exit the program
 	ENTRY
 start
-	ADR	r5, INSTR	; Copy in pointer to string
+	ADR	r5, STR1	; Copy in pointer to string
 	BL	print_string	; Call print string
 
-	MOV	r2, INSTR	; r1= r0
-parse
+	MOV	r10, STR1	; r1= r0
+parse1
 	LDRB	r1, [r2], #1	; r1= *r2; ++r2
 	CMP	r1, #0		; Check for null ; Make previous line copy byte from adr
 	BNE	parse_done	; While (char !null)
 	BL	check_vowel	; Call check_vowel
-	B	parse		; Loop back
+	B	parse1		; Loop back
 
 parse_done
 	ADR	r5, INSTR	; Load pointer for argument
@@ -28,18 +28,25 @@ print_string
 	B	print_string	; Loop back
 
 check_vowel
-	TEQ	r1, 'a'		; r1 == 'a'
-	TEQNE	r1, 'e'		; r1 == 'e'
-	TEQNE	r1, 'o'		; r1 == 'o'
-	TEQNE	r1, 'i'		; r1 == 'i'
-	TEQNE	r1, 'u'		; r1 == 'u'
-	TEQNE	r1, 'y'		; r1 == 'y'
+	TEQ	r1, #'a'	; r1 == 'a'
+	TEQNE	r1, #'e'	; r1 == 'e'
+	TEQNE	r1, #'o'	; r1 == 'o'
+	TEQNE	r1, #'i'	; r1 == 'i'
+	TEQNE	r1, #'u'	; r1 == 'u'
+	TEQNE	r1, #'y'	; r1 == 'y'
 	ADDEQ	r1, r1, #20	; Make uppercase
-	ADDEQ	r7, r7, #1	; Increment word counter
+	ADDEQ	r7, r7, #1	; Increment vowel counter
+	TEQ	r1, #'A'	; r1 == 'A'
+	TEQNE	r1, #'E'	; r1 == 'E'
+	TEQNE	r1, #'I'	; r1 == 'I'
+	TEQNE	r1, #'0'	; r1 == 'O'
+	TEQNE	r1, #'U'	; r1 == 'U'
+	TEQNE	r1, #'Y'	; r1 == 'Y'
+	ADDEQ	r7, r7, #1	; Increment vowel counter
 	MOV	pc, r14		; Return
 
+	END
 
-
-INSTR	=	"This is a soft test.", 0
+STR1	DCB	"This is a soft test.", 0
 ;  OUTSTR	=	"                    ", 0
 ALIGN
