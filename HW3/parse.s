@@ -1,4 +1,6 @@
 	AREA parse, CODE
+SWI_WriteC	EQU 	&0	; Output character in r0
+SWI_Exit	EQU	&11	; Exit the program
 	ENTRY
 start
 	ADR	r0, INSTR	; Copy in pointer to string
