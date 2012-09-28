@@ -6,7 +6,6 @@ print string - iterates through the string printing each character
 MAIN SEQUENCE:
 1. Prints entry string
 2. Replaces all vowel characters with upper case versions.
-
 3. Prints the result
 
 VOWEL CHECKER SEQUENCE:
@@ -16,10 +15,6 @@ VOWEL CHECKER SEQUENCE:
 PRINT STRING:
 1. For each char, call software interupt to print it.
 2. Watch for null char.
-
-CONVERT TO HEX:
-1. Take 32-bit number and copy it to (n).
-2. 
 
 Main Sequence (detailed):
 1. Copy address of in-string into the r1 register.
@@ -45,4 +40,3 @@ Check for vowel:
 15. Goto #10
 16. Call print string
 17. Exit program
-
