@@ -17,7 +17,11 @@ PRINT STRING:
 1. For each char, call software interupt to print it.
 2. Watch for null char.
 
-Main Sequence:
+CONVERT TO HEX:
+1. Take 32-bit number and copy it to (n).
+2. 
+
+Main Sequence (detailed):
 1. Copy address of in-string into the r1 register.
 2. Call print string
 
