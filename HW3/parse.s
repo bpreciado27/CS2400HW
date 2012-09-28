@@ -21,7 +21,8 @@ parse_done
 	BL	print_string	; Print result
 	ADR	r1, MSG1	; Load message pointer
 	BL	print_string	; Call print string
-	BL	hex_encode	; Print count of the vowels in hex code
+	MOV	r1, r7		; r1= r7
+	BL	PrintHx		; Call print hex
 
 	SWI	SWI_Exit	; Exit the program
 	
@@ -59,22 +60,20 @@ check_vowel
 
 	MOV	pc, r14		; Return
 
-; @arg r7
-hex_encode
-	ADR	r0, LOWNIB	; void* r0= &LOWNIB; Get the address of LOWNIB
-	LDR	r0, [r0]	; int r0= *r0; Get the value from the address in r0
-	AND	r5, r7, r0	; char r5= r7 & *r0; Get the low nibble
-	ADR	r0, HEXCODE	; void* r0= &HEXCODE; Get the address of HEXCODE
-	ADD	r0, r5, r0	; r0+= r5 ; Treat the address of HEXCODE like an array
-	LDR	r0, [r0]	; char r0= *r0
-	SWI	SWI_WriteC	; Print signal character in r0
-	MOV	pc, r14		; Return
- 
-LOWNIB	DCB	&0F,&00
+; arg@ r1 the number
+PrintHx	MOV	r2,#8		;count of nibbles = 8
+LOOP	MOV	r0,r1,LSR #28	;get top nibble
+	CMP 	r0, #9		;hexanumber 0-9 or A-F
+	ADDGT 	r0,r0, #"A"-10	;ASCII alphabetic
+	ADDLE 	r0,r0, #"0"	;ASCII numeric
+	SWI 	SWI_WriteC	; print character
+	MOV	r1,r1,LSL #4	;shift left one nibble
+	SUBS	r2,r2, #1	;decrement nibble count
+	BNE	LOOP		;if more nibbles,loop back
+	MOV 	pc, r14		;return
+
 STR1	DCB	"This is a soft test.", 0
-HEXCODE DCB	"0123456789ABCDEF", 0
 MSG1	DCB	"This sentence had this many vowels: ",0
 
-;  OUTSTR	=	"                    ", 0
 	ALIGN
 	END
