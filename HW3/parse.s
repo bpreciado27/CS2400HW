@@ -24,33 +24,33 @@ start
 	MOV	r7, #0		; Set r7= 0
 	ADR	r2, STR1	; void* r2= address of STR1
 
-; The loop iterates through all the characters in the string and calls check_vowel for each
-parse1
-	LDRB	r1, [r2], #1	; byte r1= *r2; ++r2
+parse1				; The loop iterates through all the characters in the string and calls check_vowel for each
+	LDRB	r1, [r2]	; byte r1= *r2;
 	CMP	r1, #0		; Check for null
 	BEQ	parse_done	; While (char !null)
 	BL	check_vowel	; Call check_vowel
+	ADD	r2, r2, #1	; ++r1
 	B	parse1		; Loop back
 
-; This is called to break the parse1 loop
-parse_done
-	ADR	r1, STR1	; void* r1= &STR1; Load pointer for argument
+parse_done			; This is called to break the parse1 loop
+	ADR	r1, STR1	; void* r1= address of STR1; Load pointer for argument
 	BL	print_string	; Print result
 	ADR	r1, MSG1	; Load message pointer
 	BL	print_string	; Call print string
 	MOV	r1, r7		; r1= r7
 	BL	PrintHx		; Call print hex
-
 	SWI	SWI_Exit	; Exit the program
-	
+
+; print_string iterates through each character in the string and prints them.
 ; @arg r1 is address to the string
 print_string
-	LDRB 	r0, [r1], #1	; r0= *r5; ++r5; Store the value from the pointer r5 then increment r5
+	LDRB 	r0, [r1], #1	; r0= *(r1++); Store the value from the pointer r5 then increment r5
 	CMP	r0, #0		; Check for null
 	MOVEQ	pc, r14		; If null, Return ; r14 is special
-	SWI	SWI_WriteC	; Print signal character in r0
+	SWI	SWI_WriteC	; Print single character in r0
 	B	print_string	; Loop back
 
+; check_vowel converts a lowercase vowel to an uppercase vowel and increments the counter for each vowel.
 ; @arg r1 is the character
 check_vowel
 	; if( r1 == 'a' || r1 == 'e' || r1 == 'o' ect.
@@ -59,15 +59,12 @@ check_vowel
 	TEQNE	r1, #'o'	; r1 == 'o'
 	TEQNE	r1, #'i'	; r1 == 'i'
 	TEQNE	r1, #'u'	; r1 == 'u'
-;	TEQNE	r1, #'y'	; r1 == 'y'	; Does not count y's
 
-	; This block always overwrites the character in memory with the same.
+	; This block always overwrites the character in memory with the same character.
 	; Therefore the memory is unchanged unless the above evaulated true.
 	; In that case, the letter will be converted to uppercase
-	MOV	r3, r1		; r3= r1		; This line is need because I can't have a STRBEQ
-	SUBEQ	r3, r3, #&20	; r3= r3 + 0x20 	; Make uppercase
-	SUB	r4, r2, #1	; void* r4= r2 - 1	; Because LDR in the parse1 loop is already one past the current position
-	STRB	r3, [r4]	; *(r4)= r3		; Store the value of r3 into the memory at r4
+	SUBEQ	r1, r1, #&20	; r1= r1 + 0x20 	; Make uppercase
+	STRB	r1, [r2]	; *(r2)= r1		; Store the value of r3 into the memory at r4
 	
 	; This should continue from the above testing for capital vowels
 	TEQNE	r1, #'A'	; r1 == 'A'
@@ -75,7 +72,6 @@ check_vowel
 	TEQNE	r1, #'I'	; r1 == 'I'
 	TEQNE	r1, #'O'	; r1 == 'O'
 	TEQNE	r1, #'U'	; r1 == 'U'
-;	TEQNE	r1, #'Y'	; r1 == 'Y'	; Does not count Y's
 	ADDEQ	r7, r7, #1	; Increment vowel counter
 
 	MOV	pc, r14		; Return
@@ -94,8 +90,8 @@ LOOP	MOV	r0,r1,LSR #28	;get top nibble
 	MOV 	pc, r14		;return
 
 ; The sentence to analyse
-STR1	DCB	 "What an earth shuttering discovery!",&0D,&0A,0
-; Message to print before printing the vowel count
+STR1	DCB	 "What an earth shuttering discovery! WHAT AN EARTH SHUTTERING DISCOVERY!",&0D,&0A,0
+; Message to print before printi0g the vowel count
 MSG1	DCB	"This sentence had this many vowels (in hex): 0x",0
 
 	ALIGN
