@@ -1,15 +1,15 @@
-;*****************************************************************************
-; File: parse.s
-; Programmer: Josh Gillham
-; Description:
-;	Takes the string in STR1 and analyses it. Modifies the
-; string while analysing to replace the lower case vowels with
-; upper case corresponding letters. Prints the count of vowel
-; letters at the end of the program.
-;
-; Project: HW3
-; Date: 9-28-12
-;******************************************************************************
+		;*****************************************************************************
+		; File: parse.s
+		; Programmer: Josh Gillham
+		; Description:
+		;	Takes the string in STR1 and analyses it. Modifies the
+		; string while analysing to replace the lower case vowels with
+		; upper case corresponding letters. Prints the count of vowel
+		; letters at the end of the program.
+		;
+		; Project: HW3
+		; Date: 9-28-12
+		;******************************************************************************
 
 
 	AREA parse, CODE
