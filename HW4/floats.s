@@ -33,6 +33,7 @@ ACTUALMSG		DCB	&0D,&0A,"Actual:",&0D,&0A,0
 			ADRNE	r1,  ERRORMSG		;
 			ADREQ	r1,  SUCCESSMSG		;
 			BL	print_string		;
+			LDR	r1, IEEE_TNS		; Here's the argument
 			TEQ	r10, r1			; r1 should = r2
 			BLNE	print_feedback		;
 			
@@ -76,23 +77,23 @@ print_feedback
 ; @return r1 is the IEEE-TNS
 ;
 ; TODO:
-; -debug
 ; -IEEE-TNS does not have infinity or zero
-; -Handle truncating better
-; -Handle Excess Code Conversions
 Conv754ToTNS
 			; Unpack each component
 			AND	r2, r1, #&80000000	; Grab the sign bit only.
 			MOV	r5, #&70000000		; The goal is to make #&7F800000
 			ORR	r5, r5, #&0F800000	; The goal is to make #&7F800000
 			AND	r3, r1, r5		; Grab 8 bits the exponent.
-			MOV	r5, #&000000FF		; The goal is to make #&003FFFFF
-			ORR	r5, r5, #&003F0000	; The goal is to make #&003FFFFF
-			ORR	r5, r5, #&0000FF00	; The goal is to make #&003FFFFF
-			AND	r4, r1,r5		; Grab 22 bits of the significant, truncating off the MSB of the significant
+			MOV	r5, #&000000FE		; The goal is to make #&007FFFFE
+			ORR	r5, r5, #&007F0000	; The goal is to make #&007FFFFE
+			ORR	r5, r5, #&0000FF00	; The goal is to make #&007FFFFE
+			AND	r4, r1,r5		; Grab 22 bits of the significant, truncating off the LSB of the significant
 			; The exponent and significant change positions
 			MOV	r3, r3, LSR #23		; Shift the exponent right by 23 bits.
-			MOV	r4, r4, LSL #9		; Shift the significant left by 9 bits.
+			MOV	r4, r4, LSL #8		; Shift the significant left by 8 bits.
+			; Convert exponent from Excess 127 to Excess 256
+			SUB	r3, r3, #127		; r3-= 127; Convert exponent from Excess 127 to 2's compliment
+			ADD	r3, r3, #256		; r3+= 256; Convert exponent from 2's compliment to Excess 256
 			; Pack the components back together
 			MOV	r1, r2			; Set r1= r2; Start with the sign bit
 			ORR	r1, r1, r3		; Pack the exponent
