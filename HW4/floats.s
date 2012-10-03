@@ -59,16 +59,17 @@ run_test
 			; Print input
 
 			MOV	r1, r10			; The argument is the IEEE 754 float.
-			ADR	r14, next		; Load the return address
+			ADR	r14, run_test_next	; Load the return address
 			MOV	pc, r9			; Make the call. r1 is the return in IEEE TNS format.
-next
+run_test_next
 			MOV	r12, r1			; Save the actual result.
 			TEQ	r12, r11		; Test to make sure conversion was correct. r12 should = r11.
-			BNE	conversion_failed	; Goto when the conversion fails.
+			BNE	run_test_failed		; Goto when the conversion fails.
 			; Display success message.
 			ADR	r1,  SUCCESSMSG		; Display a success message when the conversion succeeded.
 			BL	print_string		; Display the message.
-conversion_failed
+			B	run_test_return		; Return
+run_test_failed
 			; Print failed message.
 			ADR	r1,  ERRORMSG		; Display a error message when the conversion failed.
 			BL	print_string		; Display the message.
@@ -87,7 +88,7 @@ conversion_failed
 			BL	print_string		; Print the message.
 			MOV	r1, r11			; Load the argument.
 			BL	PrintHx			; Print the number in hex.
-
+run_test_return
 			MOV	pc, r13			; Return with the saved pointer.
 
 ; Converts IEEE-754 single floating point to IEEE-TNS.
