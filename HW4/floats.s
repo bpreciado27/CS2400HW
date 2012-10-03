@@ -24,41 +24,71 @@ ACTUALMSG		DCB	&0D,&0A,"Actual:",&0D,&0A,0
 			ALIGN
 
 			ENTRY
+start
 
-			LDR	r1, IEEE_754		; Here's the argument
-			BL	Conv754ToTNS		; Make the call. r1 is the return.
-			LDR	r2, IEEE_TNS		; Here's the argument
-			TEQ	r2, r1			; r1 should = r2
-			MOV	r10, r1			;
-			ADRNE	r1,  ERRORMSG		;
-			ADREQ	r1,  SUCCESSMSG		;
-			BL	print_string		;
-			LDR	r1, IEEE_TNS		; Here's the argument
-			TEQ	r10, r1			; r1 should = r2
-			BLNE	print_feedback		;
+			ADR	r9, Conv754ToTNS	; The first argument is the address of the function to call.
+			LDR	r10, IEEE_754		; The next argument is the input number.
+			LDR	r11, IEEE_TNS		; The next argument is the expected result of the conversion.
+			BL	run_test		; Print results for failed conversions.
+
+			SWI	SWI_Exit	; Exit the program
+; The following code is ignored
+
+			LDR	r1, IEEE_754		; The argument is the IEEE 754 float.
+			BL	Conv754ToTNS		; Make the call. r1 is the return in IEEE TNS format.
+			LDR	r2, IEEE_TNS		; Load the expected result.
+			TEQ	r2, r1			; Test to make sure conversion was correct. r1 should = r2
+			MOV	r10, r1			; Save r1 to r10
+			ADRNE	r1,  ERRORMSG		; Display an error message when the conversion failed.
+			ADREQ	r1,  SUCCESSMSG		; Display a success message when the conversion succeeded.
+			BL	print_string		; Display the message.
+			LDR	r1, IEEE_TNS		; Load the TNS
+			TEQ	r10, r1			; Recompare. This is nessary because print_string clears the flags.
+;			BLNE	print_feedback		; Print results for failed conversions.
 			
 			
 			SWI	SWI_Exit	; Exit the program
 
-print_feedback
-			MOV r13, r14			; Save return pointer
+; Runs a test and prints the results plus information useful for the debugger.
+;
+; @arg r9 is the pointer to the conversion proceedure.
+; @arg r10 is the input.
+; @arg r11 is the expected result.
+run_test
+			MOV r13, r14			; Save return pointer.
 			; Print input
-			
-			ADR	r1,  INPUTMSG		;
-			BL	print_string		;
-			MOV	r1, r10			;
-			BL	PrintHx			;
+
+			MOV	r1, r10			; The argument is the IEEE 754 float.
+			ADR	r14, next		; Load the return address
+			MOV	pc, r9			; Make the call. r1 is the return in IEEE TNS format.
+next
+			MOV	r12, r1			; Save the actual result.
+			TEQ	r12, r11		; Test to make sure conversion was correct. r12 should = r11.
+			BNE	conversion_failed	; Goto when the conversion fails.
+			; Display success message.
+			ADR	r1,  SUCCESSMSG		; Display a success message when the conversion succeeded.
+			BL	print_string		; Display the message.
+conversion_failed
+			; Print failed message.
+			ADR	r1,  ERRORMSG		; Display a error message when the conversion failed.
+			BL	print_string		; Display the message.
+			; Print More information.
+			ADR	r1,  ACTUALMSG		; Get the pointer.
+			BL	print_string		; Print the message.
+			MOV	r1, r12			; Load the argument.
+			BL	PrintHx			; Print the actual number in hex.
 			; Print result
-			ADR	r1,  ACTUALMSG		;
-			BL	print_string		;
-			LDR	r1, IEEE_754		;
-			BL	PrintHx			;
+			ADR	r1,  INPUTMSG		; Get the pointer.
+			BL	print_string		; Print the message.
+			MOV	r1, r10			; Load the argument.
+			BL	PrintHx			; Print the number in hex.
 			; Excepted result
-			ADR	r1,  EXPECTEDMSG	;
-			BL	print_string		;
-			LDR	r1, IEEE_TNS		;
-			BL	PrintHx			;
-			MOV	pc, r13			; Return
+			ADR	r1,  EXPECTEDMSG	; Get the pointer.
+			BL	print_string		; Print the message.
+			MOV	r1, r11			; Load the argument.
+			BL	PrintHx			; Print the number in hex.
+
+			MOV	pc, r13			; Return with the saved pointer.
 
 ; Converts IEEE-754 single floating point to IEEE-TNS.
 ; IEEE-754	Sign 1-Bit| Exponent 	8-bit	(Excess 127)	| Significant 	23-bits
