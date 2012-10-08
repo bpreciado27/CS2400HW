@@ -110,16 +110,31 @@ Conv754ToTNS
 			MOV	r5, #&70000000		; The goal is to make #&7F800000
 			ORR	r5, r5, #&0F800000	; The goal is to make #&7F800000
 			AND	r3, r1, r5		; Grab 8 bits the exponent.
+			CMP	r3, r5			; Check for infinity or not a number
+			MOVEQ	pc, r14			; Error. Cannot convert.
 			MOV	r5, #&000000FE		; The goal is to make #&007FFFFE
 			ORR	r5, r5, #&007F0000	; The goal is to make #&007FFFFE
 			ORR	r5, r5, #&0000FF00	; The goal is to make #&007FFFFE
 			AND	r4, r1,r5		; Grab 22 bits of the significant, truncating off the LSB of the significant
+			
 			; The exponent and significant change positions
 			MOV	r3, r3, LSR #23		; Shift the exponent right by 23 bits.
 			MOV	r4, r4, LSL #8		; Shift the significant left by 8 bits.
 			; Convert exponent from Excess 127 to Excess 256
 			SUB	r3, r3, #127		; r3-= 127; Convert exponent from Excess 127 to 2's compliment
 			ADD	r3, r3, #256		; r3+= 256; Convert exponent from 2's compliment to Excess 256
+			; Check for denormalized form
+			; only if ( r3 == 127 && r4 > 0 )
+			T	r3, #&0000007F		;
+			CMPEQ	r4, #&00000000		; Denormalized have exponents at 127
+			BGT	Conv754ToTNS_skipNorm	; Skip in most cases
+			;TODO What if r4 is zero?
+Conv754ToTNS_norm	; Normalization
+			MOV	r4, r4, LSL #1		; The goal is to shift until the MSB is one.
+			AND	r5, r4, #&80000000	; Isolate the MSB
+			CMP	r5, r5, #&80000000	; Should be equal
+			BNE	Conv754ToTNS_norm	; Keep repeating
+Conv754ToTNS_skipNorm	;
 			; Pack the components back together
 			MOV	r1, r2			; Set r1= r2; Start with the sign bit
 			ORR	r1, r1, r3		; Pack the exponent
