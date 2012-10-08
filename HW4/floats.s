@@ -14,25 +14,34 @@
 SWI_WriteC		EQU 	&0			; Software interupt will write character in r0 to output
 SWI_Exit		EQU	&11			; Software interupt will exit the program
 ; Using DCD preserves the order of the bytes
-IEEE_754		DCD	&41FE0000		; Here's an IEEE-754 single (32-bit) floating point for 0x1F.C
-IEEE_TNS		DCD	&7E000104		; Here's an IEEE-TNS single (32-bit) floating point for 0x1F.C
-ERRORMSG		DCB	"Error bad conversion",&0D,&0A,0
-SUCCESSMSG		DCB	"Good job!",&0D,&0A,0
+; Infinity in 754 : &7F800000
+IEEE_754		DCD	&41FE0000, &3FD70AE8, &00000000	; Here's an IEEE-754 single (32-bit) floating point for 0x1F.C
+IEEE_TNS		DCD	&7E000104, &2E15D0FF, &00000000	; Here's an IEEE-TNS single (32-bit) floating point for 0x1F.C
+ERRORMSG		DCB	&0D,&0A,"Error bad conversion.",&0D,&0A,0
+SUCCESSMSG		DCB	&0D,&0A,"Good conversion!",&0D,&0A,0
 INPUTMSG		DCB	"Input:",&0D,&0A,0
 EXPECTEDMSG		DCB	&0D,&0A,"Expected:",&0D,&0A,0
 ACTUALMSG		DCB	&0D,&0A,"Actual:",&0D,&0A,0
 			ALIGN
 
+; Loops through each number in IEEE_754 and IEEE_TNS. The loop terminates when it reaches the last element (zero).
 			ENTRY
-; TODO:
-; -Test Conv754ToTNS
-; -Add new test numbers
-
+			ADR	r7, IEEE_754
+			ADR	r8, IEEE_TNS		
 start
+			LDR	r10, [r7], #4 
+			LDR	r11, [r8], #4
+			 
 			ADR	r9, Conv754ToTNS	; The first argument is the address of the function to call.
-			LDR	r10, IEEE_754		; The next argument is the input number.
-			LDR	r11, IEEE_TNS		; The next argument is the expected result of the conversion.
 			BL	run_test		; Print results for failed conversions.
+
+			ADR	r9, ConvTNSTo754	; The first argument is the address of the function to call.
+			MOV	r0, r10			; Put into a temporary.
+			MOV	r10, r11		; Swap.
+			MOV	r11, r0			; Swap.
+			BL	run_test		; Print results for failed conversions.
+			CMP	r10, #&00000000
+			BNE	start
 
 			SWI	SWI_Exit	; Exit the program
 
@@ -43,29 +52,9 @@ start
 ; @arg r11 is the expected result.
 run_test
 			MOV r13, r14			; Save return pointer.
-			; Print input
 
-			MOV	r1, r10			; The argument is the IEEE 754 float.
-			ADR	r14, run_test_next	; Load the return address
-			MOV	pc, r9			; Make the call. r1 is the return in IEEE TNS format.
-run_test_next
-			MOV	r12, r1			; Save the actual result.
-			TEQ	r12, r11		; Test to make sure conversion was correct. r12 should = r11.
-			BNE	run_test_failed		; Goto when the conversion fails.
-			; Display success message.
-			ADR	r1,  SUCCESSMSG		; Display a success message when the conversion succeeded.
-			BL	print_string		; Display the message.
-			B	run_test_return		; Return
-run_test_failed
-			; Print failed message.
-			ADR	r1,  ERRORMSG		; Display a error message when the conversion failed.
-			BL	print_string		; Display the message.
-			; Print More information.
-			ADR	r1,  ACTUALMSG		; Get the pointer.
-			BL	print_string		; Print the message.
-			MOV	r1, r12			; Load the argument.
-			BL	PrintHx			; Print the actual number in hex.
-			; Print result
+			; Show what is going in and what should come out.
+			; Print input
 			ADR	r1,  INPUTMSG		; Get the pointer.
 			BL	print_string		; Print the message.
 			MOV	r1, r10			; Load the argument.
@@ -75,7 +64,26 @@ run_test_failed
 			BL	print_string		; Print the message.
 			MOV	r1, r11			; Load the argument.
 			BL	PrintHx			; Print the number in hex.
+
+			; Run test by moving the program counter and setting the return register.
+			MOV	r1, r10			; The argument is the IEEE 754 float.
+			ADR	r14, run_test_return	; Load the return address
+			MOV	pc, r9			; Make the call. r1 is the return in IEEE TNS format.
 run_test_return
+			MOV	r12, r1			; Save the actual result.
+			; Show the actual result.
+			ADR	r1,  ACTUALMSG		; Get the pointer.
+			BL	print_string		; Print the message.
+			MOV	r1, r12			; Load the argument.
+			BL	PrintHx			; Print the actual number in hex.
+			; Determine if the outcome is successful and respond accordingly.
+			
+			TEQ	r12, r11		; Test to make sure conversion was correct. r12 should = r11.
+			; Display correct message
+			ADREQ	r1,  SUCCESSMSG		; Display a success message when the conversion succeeded.
+			ADRNE	r1,  ERRORMSG		; Display a error message when the conversion failed.
+			BL	print_string		; Display the message.
+
 			MOV	pc, r13			; Return with the saved pointer.
 
 ; Converts IEEE-754 single floating point to IEEE-TNS.
@@ -143,14 +151,21 @@ Conv754ToTNS
 ConvTNSTo754
 			; Unpack each component
 			AND	r2, r1, #&80000000	; Grab the sign bit only.
-			AND	r3, r1, #&000000FF	; Grab 8 bits the exponent truncating the MSB.
+			MOV	r5, #&000000FF		; The goal is to make #&000001FF
+			ORR	r5, r5, #&00000100	; The goal is to make #&000001FF
+			AND	r3, r1, r5	; Grab 9 bits the exponent
 			MOV	r5, #&7F000000		; The goal is to make #&7FFFFE00
 			ORR	r5, r5, #&0000FE00	; The goal is to make #&7FFFFE00
 			ORR	r5, r5, #&00FF0000	; The goal is to make #&7FFFFE00
 			AND	r4, r1, r5		; Grab 22 bits the significant.
+			; Convert exponent from Excess 127 to Excess 256
+			SUB	r3, r3, #256		; r3-= 256; Convert exponent from 2's compliment to Excess 256
+			AND	r3, r3, #&000000FF	; Truncate the MSB.
+			ADD	r3, r3, #127		; r3+= 127; Convert exponent from Excess 127 to 2's compliment
+
 			; The exponent and significant change positions
 			MOV	r3, r3, LSL #23		; Shift the exponent left by 23 bits.
-			MOV	r4, r4, LSR #9		; Shift the significant right by 9 bits.
+			MOV	r4, r4, LSR #8		; Shift the significant right by 9 bits.
 			; Pack the components back together
 			MOV	r1, r2			; Set r1= r2; Start with the sign bit
 			ORR	r1, r1, r3		; Pack the exponent
