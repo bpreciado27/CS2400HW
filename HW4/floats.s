@@ -15,8 +15,8 @@ SWI_WriteC		EQU 	&0			; Software interupt will write character in r0 to output
 SWI_Exit		EQU	&11			; Software interupt will exit the program
 ; Using DCD preserves the order of the bytes
 ; Infinity in 754 : &7F800000
-IEEE_754		DCD	&41FE0000, &3FD70AE8, &00000000	; Here's an IEEE-754 single (32-bit) floating point for 0x1F.C
-IEEE_TNS		DCD	&7E000104, &2E15D0FF, &00000000	; Here's an IEEE-TNS single (32-bit) floating point for 0x1F.C
+IEEE_754		DCD	&41FE0000, &00000000	; Here's an IEEE-754 single (32-bit) floating point for 0x1F.C
+IEEE_TNS		DCD	&7E000104, &00000000	; Here's an IEEE-TNS single (32-bit) floating point for 0x1F.C
 ERRORMSG		DCB	&0D,&0A,"Error bad conversion.",&0D,&0A,0
 SUCCESSMSG		DCB	&0D,&0A,"Good conversion!",&0D,&0A,0
 INPUTMSG		DCB	"Input:",&0D,&0A,0
@@ -31,6 +31,9 @@ ACTUALMSG		DCB	&0D,&0A,"Actual:",&0D,&0A,0
 start
 			LDR	r10, [r7], #4 
 			LDR	r11, [r8], #4
+			
+			CMP	r10, #&00000000
+			SWIEQ	SWI_Exit	; Exit the program
 			 
 			ADR	r9, Conv754ToTNS	; The first argument is the address of the function to call.
 			BL	run_test		; Print results for failed conversions.
@@ -40,10 +43,9 @@ start
 			MOV	r10, r11		; Swap.
 			MOV	r11, r0			; Swap.
 			BL	run_test		; Print results for failed conversions.
-			CMP	r10, #&00000000
-			BNE	start
 
-			SWI	SWI_Exit	; Exit the program
+			B	start
+
 
 ; Runs a test and prints the results plus information useful for the debugger.
 ;
