@@ -125,18 +125,6 @@ Conv754ToTNS
 			; Convert exponent from Excess 127 to Excess 256
 			SUB	r3, r3, #127		; r3-= 127; Convert exponent from Excess 127 to 2's compliment
 			ADD	r3, r3, #256		; r3+= 256; Convert exponent from 2's compliment to Excess 256
-			; Check for denormalized form
-			; only if ( r3 == 127 && r4 > 0 )
-			T	r3, #&0000007F		;
-			CMPEQ	r4, #&00000000		; Denormalized have exponents at 127
-			BGT	Conv754ToTNS_skipNorm	; Skip in most cases
-			;TODO What if r4 is zero?
-Conv754ToTNS_norm	; Normalization
-			MOV	r4, r4, LSL #1		; The goal is to shift until the MSB is one.
-			AND	r5, r4, #&80000000	; Isolate the MSB
-			CMP	r5, r5, #&80000000	; Should be equal
-			BNE	Conv754ToTNS_norm	; Keep repeating
-Conv754ToTNS_skipNorm	;
 			; Pack the components back together
 			MOV	r1, r2			; Set r1= r2; Start with the sign bit
 			ORR	r1, r1, r3		; Pack the exponent
