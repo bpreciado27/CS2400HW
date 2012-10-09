@@ -24,6 +24,8 @@ EXPECTEDMSG		DCB	&0D,&0A,"Expected:",&0D,&0A,0
 ACTUALMSG		DCB	&0D,&0A,"Actual:",&0D,&0A,0
 			ALIGN
 
+
+
 ; Loops through each number in IEEE_754 and IEEE_TNS. The loop terminates when it reaches the last element (zero).
 			ENTRY
 			ADR	r7, IEEE_754
@@ -34,9 +36,15 @@ start
 			
 			CMP	r10, #&00000000
 			SWIEQ	SWI_Exit	; Exit the program
+			
+			ADR	r1,  IEEE754MSG		; Get the pointer.
+			BL	print_string		; Print the message.
 			 
 			ADR	r9, Conv754ToTNS	; The first argument is the address of the function to call.
 			BL	run_test		; Print results for failed conversions.
+
+			ADR	r1,  IEEETNSMSG		; Get the pointer.
+			BL	print_string		; Print the message.
 
 			ADR	r9, ConvTNSTo754	; The first argument is the address of the function to call.
 			MOV	r0, r10			; Put into a temporary.
@@ -88,6 +96,9 @@ run_test_return
 
 			MOV	pc, r13			; Return with the saved pointer.
 
+IEEE754MSG		DCB	&0D,&0A,"Converting 1F.C from IEEE 754 to IEEE TNS...",&0D,&0A,0
+IEEETNSMSG		DCB	&0D,&0A,"Converting 1F.C from IEEE TNS to IEEE 754...",&0D,&0A,0
+			ALIGN
 ; Converts IEEE-754 single floating point to IEEE-TNS.
 ; IEEE-754	Sign 1-Bit| Exponent 	8-bit	(Excess 127)	| Significant 	23-bits
 ; IEEE-TNS	Sign 1-Bit| Significant 22-bits			| Exponent 	9-bit (Excess 256)
@@ -200,5 +211,6 @@ LOOP	MOV	r0,r1,LSR #28	;get top nibble
 	SUBS	r2,r2, #1	;decrement nibble count
 	BNE	LOOP		;if more nibbles,loop back
 	MOV 	pc, r14		;return
+
 
 			END
