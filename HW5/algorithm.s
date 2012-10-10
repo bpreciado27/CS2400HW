@@ -25,11 +25,22 @@ RANDOMSERIES        	DCD     &55555555, &55555555, &55555555, &00000000
 ; 2. For each byte count the 1s and 0s
 ; 3. Print the results to the screen.
 			ENTRY
-start
-			ADR     r12, seedpointer
-                     	LDR     r11, [r12], #4          ; r11=r12; r12+=4;
-                       
+
+			ADR     r12, RANDOMSERIES
+                     	
+start                       
                      	BL      randomnumber 
+			MOV	r11, {result}		; Store result from random number into r11
+			STR	r11, [r12]		; Store the value of r11 into the memory pointed to by r12
+			LDR     r11, [r12]          	; r11=r12;
+			CMP	r11, #&00000000		; End byte is zero
+			ADDNE	r12, r12, #1		; Increment r12
+			BNE	start			;
+			
+			ADR	r12, RANDOMSERIES	; Get a pointer to RANDOMSERIES
+main_process
+			LDRB	r11, [r12], #1		; r11=*( r12++ )
+			
 			SWI	SWI_Exit	; Exit the program
 
 ; Takes a byte and counts the number of 1s.
