@@ -11,11 +11,14 @@
 			;******************************************************************************
 
 			AREA parse, CODE
+			IMPORT randomnumber
+			IMPORT seed
+			IMPORT printhexa
 SWI_WriteC		EQU 	&0			; Software interupt will write character in r0 to output
 SWI_Exit		EQU	&11			; Software interupt will exit the program
-seedpointer            	DCD     &55555555, &55555555
 RANDOMSERIES        	DCD     &55555555, &55555555, &55555555, &00000000
 			ALIGN
+
 ; Outline:
 ; 1. Store the results into a string of bytes.
 ; . While seedpointer is not zero.
@@ -26,20 +29,22 @@ RANDOMSERIES        	DCD     &55555555, &55555555, &55555555, &00000000
 ; 3. Print the results to the screen.
 			ENTRY
 
-			ADR     r12, RANDOMSERIES
+			ADR     r5, RANDOMSERIES
                      	
-start                       
-                     	BL      randomnumber 
-			MOV	r11, {result}		; Store result from random number into r11
-			STR	r11, [r12]		; Store the value of r11 into the memory pointed to by r12
-			LDR     r11, [r12]          	; r11=r12;
+start
+                     	BL      randomnumber
+			;MOV	r1, r0
+			MOV	r13, r0
+			;BL	printhexa
+			LDR	r11, [r5]
 			CMP	r11, #&00000000		; End byte is zero
-			ADDNE	r12, r12, #1		; Increment r12
+			STR	r13, [r5]		; Store random number
+			ADDNE	r5, r5, #4		; Increment r5
 			BNE	start			;
 			
-			ADR	r12, RANDOMSERIES	; Get a pointer to RANDOMSERIES
+			;ADR	r12, RANDOMSERIES	; Get a pointer to RANDOMSERIES
 main_process
-			LDRB	r11, [r12], #1		; r11=*( r12++ )
+			;LDRB	r11, [r12], #1		; r11=*( r12++ )
 			
 			SWI	SWI_Exit	; Exit the program
 
@@ -50,7 +55,7 @@ main_process
 ; @return r2 is the count of 1s
 ;
 ; Outline:
-; 1.  r2= 0
+; 1. r2= 0
 ; 2. If( r0 == 0 ) return r2
 ; 3. Add 1 to r2
 ; 4. Let the temporary number (r1) = r0.
