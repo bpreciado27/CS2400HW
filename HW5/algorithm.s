@@ -58,8 +58,18 @@ main_process
 ; 6. r0 = r1 AND r0.
 ; 7. Goto #1
 ;
+; TODO:
+; -Handle when r2 is negative (r2 should be unsigned)
 count1sb
-			MOV	pc, r14			; Return
+			MOV	r2, #0			; Set r2 to 0
+count1sb_loop
+			CMP	r0, #0			; If r0 == 0
+			MOVEQ	pc, r14			; Then return
+			MOV	r1, r0			; r1= r0
+			SUB	r0, r0, #1		; --r0; Handle negatives?
+			AND	r0, r0, r1		; r0&= r1
+			B	count1sb_loop		; Goto count1sb_loop
+			
 
 ; Takes a byte and counts the number of 0s.
 ; 
@@ -70,15 +80,25 @@ count1sb
 ; TODO:
 ; -finish outline.
 ; Outline:
-; 1.  r2= 8
+; 1.  r2= 0
 ; 2. If( r0 == 255 ) return r2
-; 3. Subtract 1 to r2
+; 3. Add 1 to r2
 ; 4. Let the temporary number (r1) = r0.
-; 5. Add 1 from r0.
+; 5. Add 1 to r0.
 ; 6. r0 = r1 OR r0.
 ; 7. Goto #1
 ;
 count0sb
-			MOV	pc, r14			; Return
+			MOV	r2, #0			; r2= 0
+count0sb_loop
+			CMP	r0, #255		; If r0 == value when all bits are on
+			MOVEQ	pc, r14			; Then return
+			ADD	r2, r2, #1		; ++r2
+			MOV	r1, r0			; r1= r0
+			ADD	r0, r0, #1		; ++r0
+			ORR	r0, r0, r1		; r0|=r1
+			B	count0sb_loop		; Goto count0sb_loop
+
+			END
 
 
