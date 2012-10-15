@@ -18,7 +18,7 @@
 SWI_WriteC		EQU 	&0			; Software interupt will write character in r0 to output
 SWI_Exit		EQU	&11			; Software interupt will exit the program
 RANDOMSERIES        	DCD     &55555555, &55555555, &55555555, &00000000
-NUMBERMSG		DCB	&0D,&0A,"Random Number:",&0D,&0A,0
+NUMBERMSG		DCB	&0D,&0A, &0D,&0A,"Random Number:",&0D,&0A,0
 TELL0SMSG		DCB	&0D,&0A,"Count 0s:",&0D,&0A,0
 TELL1SMSG		DCB	&0D,&0A,"Count 1s:",&0D,&0A,0
 			ALIGN
