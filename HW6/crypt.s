@@ -18,6 +18,7 @@ MSG			DCB	"This is a secret!",&0,&0,&0			; Store secret message
 MSGOUT			DCB	"This the result!!",&0,&0,&0			; Store secret message
 KEY			DCD	&F1A57D2B					; Encryption key
 MSG_XOR_MASK		DCB	"The result of XOR_mask:",&0			; Status message
+MSG_PERMUTATION		DCB	"The result of permutation:",&0			; Status message
 			ALIGN
 
 			ENTRY
@@ -49,7 +50,7 @@ compare
 ; . shift r1 right by 8 bits.
 ; . shift r2 left byt 8 bits.
 ; . repack word
-:
+;
 ; @arg r0 is the word input.
 ;
 ; @return r0 is the word output.
@@ -58,8 +59,33 @@ compare
 ;
 ; Structure:
 ;  -Calls print_string to show the result. 
+BYTE1			DCD	&FF000000		; Mask for the high.
 permutation
-			MOV
+			; Extract each byte.
+			AND r1, r0, #&00FF0000		; Grab the 2nd byte.
+			AND r2, r0, #&0000FF00		; Grab the 3nd byte.
+			AND r3, r0, #&000000FF		; Grab the last byte.
+			AND r0, r0, #&FF000000		; Grab the first byte.
+			; Swap byte positions.
+			MOV r0, r0, LSR #24		; Move the highest to the lowest.
+			MOV r1, r1, LSR #8		; Move the 2nd to the 3rd.
+			MOV r2, r2, LSL #8		; Move the 3nd to the 2rd.
+			MOV r3, r3, LSL #24		; Move the lowest to the highest.
+			; Repack
+			ORR r0, r0, r1			; Pack on r1
+			ORR r0, r0, r2			; Pack on r2
+			ORR r0, r0, r3			; Pack on r2
+			; Show results
+			STMFD sp!, { r0, lr }		; Push routine registers
+			ADR r0, MSG_PERMUTATION		; Get address of message to display
+			BL print_string			; Show message
+			LDMFD sp!, { r0, lr }		; Pop routine registers
+			STMFD sp!, { r0, lr }		; Push routine registers
+			BL printhexa			; Show result
+			LDMFD sp!, { r0, lr }		; Pop routine registers
+			MOV pc, lr			; Return
+
+
 ; Accepts a word and encrypts it with a 32-bit key.
 ;
 ; Outline
@@ -77,13 +103,13 @@ permutation
 ; Structure:
 ;  -Calls print_string to show the result. 
 XOR_mask
-			MOV r1, KEY			; Copy the key into r1.
-			XOR r0, r0, r1			; Encrypt word.
-			STMFP sp!, { r0, lr }		; Push routine registers
+			LDR r1, KEY			; Copy the key into r1.
+			EOR r0, r0, r1			; Encrypt word.
+			STMFD sp!, {r0,lr}		; Push routine registers
 			ADR r0, MSG_XOR_MASK		; Get the address of the message to display.
 			BL print_string			; Show message
 			LDMFD sp!, { r0, lr }		; Pop routine registers
-			STMFP sp!, { r0, lr }		; Push routine registers
+			STMFD sp!, { r0, lr }		; Push routine registers
 			BL printhexa			; Show result
 			LDMFD sp!, { r0, lr }		; Pop routine registers
 			MOV pc, lr			; Return
