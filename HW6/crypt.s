@@ -19,13 +19,29 @@ MSGOUT			DCB	"This the result!!",&0				; Store secret message
 			ALIGN
 
 			ENTRY
+; Structure:
+;  -The main subroutine calls in sequence the encryption subroutine,
+;    the decryption subroutine and the compare subroutine
 start
 
+; Structure:
+;  -Calls print_string to show the input then calls permutation and XOR_mask
 encrypt
 
+; Structure:
+;  -Calls print_string to show the input then calls permutation and XOR_mask
 decrypt
+
+; Structure:
+;  -Calls print_string to show the results. 
 compare
+
+; Structure:
+;  -Calls print_string to show the result. 
 permutation
+
+; Structure:
+;  -Calls print_string to show the result. 
 XOR_mask
 
 ; Demostrates that I can save all the registers and restore them later. Only for testing purposes.
