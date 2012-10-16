@@ -10,16 +10,23 @@
 			;******************************************************************************
 
 			AREA parse, CODE
-			IMPORT randomnumber
-			IMPORT seed
 			IMPORT printhexa
 			IMPORT print_string
 SWI_WriteC		EQU 	&0						; Software interupt will write character in r0 to output
 SWI_Exit		EQU	&11						; Software interupt will exit the program
+MSG			DCB	"This is a secret!",&0				; Store secret message
+MSGOUT			DCB	"This the result!!",&0				; Store secret message
 			ALIGN
 
 			ENTRY
 start
+
+encrypt
+
+decrypt
+compare
+permutation
+XOR_mask
 
 ; Demostrates that I can save all the registers and restore them later. Only for testing purposes.
 stack_test
