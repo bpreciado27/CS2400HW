@@ -22,6 +22,8 @@ MSG_XOR_MASK		DCB	"The result of XOR_mask:",&0			; Status message
 MSG_PERMUTATION		DCB	"The result of permutation:",&0			; Status message
 MSG_ENCRYPTION		DCB	"The word before encryption:",&0		; Status message
 MSG_DECRYPTION		DCB	"The word before decryption:",&0		; Status message
+MSG_COMPARE_GOOD	DCB	"The words were equal :)",&0			; Status message
+MSG_COMPARE_BAD		DCB	"The words were NOT equal :(",&0		; Status message
 			ALIGN
 
 			ENTRY
@@ -42,7 +44,7 @@ start
 ;
 ; @return r0 is the encrypted word.
 ;
-; Affected Addresses: r0
+; Affected Registers: r0
 ;
 ; Structure:
 ;  -Calls print_string to show the input then calls permutation and XOR_mask
@@ -72,7 +74,7 @@ encrypt			; Show input
 ;
 ; @return r0 is the dencrypted word.
 ;
-; Affected Addresses: r0
+; Affected Registers: r0
 ;
 ; Structure:
 ;  -Calls print_string to show the input then calls permutation and XOR_mask
@@ -101,6 +103,8 @@ decrypt			; Show input
 ; @arg r0 is the word to cryptify.
 ;
 ; @return r0 is the result.
+;
+; Affected Registers: none
 crypt			; Perform permutational swap
 			STMFD sp!, {r0, lr}					; Push routine registers
 			BL permutation						; Call permutation
@@ -110,10 +114,30 @@ crypt			; Perform permutational swap
 			BL XOR_mask						; Call XOR_mask
 			LDMFD sp!, {r0, lr}					; Pop routine registers
 			MOV pc, lr						; Return
-
+; Compares to words and displays the results.
+;
+; Outline:
+; . Compares r0 and r1.
+; . Prints one message on success and another on failure.
+;
+; @arg r0 is the 1st word.
+; @arg r1 is the second word.
+;
+; @return nothing
+;
+; Affected Registers: r0
+;
 ; Structure:
 ;  -Calls print_string to show the results. 
 compare
+			CMP r0, r1						; Compare two words.
+			STMFD sp!, {lr}						; Push routine registers
+			ADREQ r0, MSG_COMPARE_GOOD				; For equal comparisons, yeild a good message.
+			ADRNE r0, MSG_COMPARE_BAD				; For inequal comparisons, yeild a bad message.
+			BL print_string						; Show the message
+			LDMFD sp!, {lr}						; Pop routine registers
+			MOV pc, lr						; Return
+
 
 ; Accepts a word and swapps the bytes 1 with 4 and 2 with 3.
 ;
@@ -132,7 +156,7 @@ compare
 ;
 ; @return r0 is the word output.
 ;
-; Affected Registers:
+; Affected Registers: r0, r1, r2, r3
 ;
 ; Structure:
 ;  -Calls print_string to show the result. 
