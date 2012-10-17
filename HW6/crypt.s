@@ -14,16 +14,18 @@
 			IMPORT print_string
 SWI_WriteC		EQU 	&0						; Software interupt will write character in r0 to output
 SWI_Exit		EQU	&11						; Software interupt will exit the program
-MSG			DCB	"This is a secret!",&0,&0,&0			; Store secret message
-MSG_ENCRYPTED		DCB	"This the result!!",&0,&0,&0			; Store secret message
-MSG_DECRYPTED		DCB	"This the result!!",&0,&0,&0			; Store secret message
+MSG			DCB	&0D,&0A,"This is a secret!",&0,&0,&0			; Store secret message
+MSG_ENCRYPTED		DCB	&0D,&0A,"This the result!!",&0,&0,&0			; Store secret message
+MSG_DECRYPTED		DCB	&0D,&0A,"This the result!!",&0,&0,&0			; Store secret message
 KEY			DCD	&F1A57D2B					; Encryption key
-MSG_XOR_MASK		DCB	"The result of XOR_mask:",&0			; Status message
-MSG_PERMUTATION		DCB	"The result of permutation:",&0			; Status message
-MSG_ENCRYPTION		DCB	"The word before encryption:",&0		; Status message
-MSG_DECRYPTION		DCB	"The word before decryption:",&0		; Status message
-MSG_COMPARE_GOOD	DCB	"The words were equal :)",&0			; Status message
-MSG_COMPARE_BAD		DCB	"The words were NOT equal :(",&0		; Status message
+MSG_XOR_MASK		DCB	&0D,&0A,"The result of XOR_mask:",&0			; Status message
+			ALIGN
+MSG_PERMUTATION		DCB	&0D,&0A,"The result of permutation:",&0			; Status message
+MSG_ENCRYPTION		DCB	&0D,&0A,"The word before encryption:",&0		; Status message
+MSG_DECRYPTION		DCB	&0D,&0A,"The word before decryption:",&0		; Status message
+			ALIGN
+MSG_COMPARE_GOOD	DCB	&0D,&0A,"The words were equal :)",&0			; Status message
+MSG_COMPARE_BAD		DCB	&0D,&0A,"The words were NOT equal :(",&0		; Status message
 			ALIGN
 
 			ENTRY
@@ -36,14 +38,16 @@ start
                         AND r2, r0, #&000000FF  ; Get the last byte.
                         CMP r2, #0              ; Check for null      
                         BEQ break               ; Break the loop
-                        STMFD sp!, {r0,r1}      ; Push routine registers
+                        STMFD sp!, {r0, r1}      ; Push routine registers
                         BL encrypt              ; Call encrypt.
                         MOV r3, r0              ; Save encrypted text.
-                        LDMFD sp!, {r0, r1}     ; Pop routinee registers.
-                        STMFD sp!, {r0,r1}      ; Push routine registers
                         BL decrypt              ; Call encrypt.
-                        MOV r4, r0              ; Save encrypted text.
+                        MOV r4, r0              ; Save decrypted text.
                         LDMFD sp!, {r0, r1}     ; Pop routinee registers.
+                        STMFD sp!, {r1}      ; Push routine registers
+                        MOV r1, r4              ; Save decrypted text.
+			BL compare		; Check result
+                        LDMFD sp!, {r1}     ; Pop routinee registers.
                         B start                 ; Loop back 
 break
                         SWI SWI_Exit            ; Exit the program.
@@ -65,16 +69,20 @@ break
 ;  -Calls print_string to show the input then calls permutation and XOR_mask
 encrypt			; Show input
 			STMFD sp!, {r0, lr}					; Push routine registers
-			ADR r0, MSG_ENCRYPTION					; Get the address to the message.
+			ADR r1, MSG_ENCRYPTION					; Get the address to the message.
 			BL print_string						; Show message.
 			LDMFD sp!, {r0, lr}					; Pop routine registers
 			STMFD sp!, {r0, lr}					; Push routine registers
+			MOV r1, r0
 			BL printhexa						; Show input.
 			LDMFD sp!, {r0, lr}					; Pop routine registers
 			; Encrypt word
-			STMFD sp!, {r0, lr}					; Push routine registers
-			BL crypt						; Call crypt
-			LDMFD sp!, {r0, lr}					; Pop routine registers
+			STMFD sp!, {lr}						; Push routine registers
+			; Perform permutational swap
+			BL permutation						; Call permutation
+			; Mask the result with a key
+			BL XOR_mask						; Call XOR_mask
+			LDMFD sp!, {lr}						; Push routine registers
 			MOV pc, lr						; Return
 
 ; Takes a word and decrypts it.
@@ -95,16 +103,21 @@ encrypt			; Show input
 ;  -Calls print_string to show the input then calls permutation and XOR_mask
 decrypt			; Show input
 			STMFD sp!, {r0, lr}					; Push routine registers
-			ADR r0, MSG_DECRYPTION					; Get the address to the message.
+			ADR r1, MSG_DECRYPTION					; Get the address to the message.
 			BL print_string						; Show message.
 			LDMFD sp!, {r0, lr}					; Pop routine registers
 			STMFD sp!, {r0, lr}					; Push routine registers
+			MOV r1, r0
 			BL printhexa						; Show input.
 			LDMFD sp!, {r0, lr}					; Pop routine registers
 			; Encrypt word
-			STMFD sp!, {r0, lr}					; Push routine registers
-			BL crypt						; Call crypt
-			LDMFD sp!, {r0, lr}					; Pop routine registers
+			STMFD sp!, {lr}						; Push routine registers
+			
+			; Mask the result with a key
+			BL XOR_mask						; Call XOR_mask
+			; Perform permutational swap
+			BL permutation						; Call permutation
+			LDMFD sp!, {lr}						; Pop routine registers
 			MOV pc, lr						; Return
 
 ; Because permutation and XOR_mask do not distinguish between encryption or decryption, they can be used
@@ -121,13 +134,11 @@ decrypt			; Show input
 ;
 ; Affected Registers: none
 crypt			; Perform permutational swap
-			STMFD sp!, {r0, lr}					; Push routine registers
+			STMFD sp!, {lr}						; Push routine registers
 			BL permutation						; Call permutation
-			LDMFD sp!, {r0, lr}					; Pop routine registers
 			; Mask the result with a key
-			STMFD sp!, {r0, lr}					; Push routine registers
 			BL XOR_mask						; Call XOR_mask
-			LDMFD sp!, {r0, lr}					; Pop routine registers
+			LDMFD sp!, {lr}						; Pop routine registers
 			MOV pc, lr						; Return
 ; Compares to words and displays the results.
 ;
@@ -147,8 +158,8 @@ crypt			; Perform permutational swap
 compare
 			CMP r0, r1						; Compare two words.
 			STMFD sp!, {lr}						; Push routine registers
-			ADREQ r0, MSG_COMPARE_GOOD				; For equal comparisons, yeild a good message.
-			ADRNE r0, MSG_COMPARE_BAD				; For inequal comparisons, yeild a bad message.
+			ADREQ r1, MSG_COMPARE_GOOD				; For equal comparisons, yeild a good message.
+			ADRNE r1, MSG_COMPARE_BAD				; For inequal comparisons, yeild a bad message.
 			BL print_string						; Show the message
 			LDMFD sp!, {lr}						; Pop routine registers
 			MOV pc, lr						; Return
@@ -193,10 +204,11 @@ permutation
 			ORR r0, r0, r3			; Pack on r2
 			; Show results
 			STMFD sp!, { r0, lr }		; Push routine registers
-			ADR r0, MSG_PERMUTATION		; Get address of message to display
+			ADR r1, MSG_PERMUTATION		; Get address of message to display
 			BL print_string			; Show message
 			LDMFD sp!, { r0, lr }		; Pop routine registers
 			STMFD sp!, { r0, lr }		; Push routine registers
+			MOV r1, r0
 			BL printhexa			; Show result
 			LDMFD sp!, { r0, lr }		; Pop routine registers
 			MOV pc, lr			; Return
@@ -222,10 +234,11 @@ XOR_mask
 			LDR r1, KEY			; Copy the key into r1.
 			EOR r0, r0, r1			; Encrypt word.
 			STMFD sp!, {r0,lr}		; Push routine registers
-			ADR r0, MSG_XOR_MASK		; Get the address of the message to display.
+			ADR r1, MSG_XOR_MASK		; Get the address of the message to display.
 			BL print_string			; Show message
 			LDMFD sp!, { r0, lr }		; Pop routine registers
 			STMFD sp!, { r0, lr }		; Push routine registers
+			MOV r1, r0
 			BL printhexa			; Show result
 			LDMFD sp!, { r0, lr }		; Pop routine registers
 			MOV pc, lr			; Return
