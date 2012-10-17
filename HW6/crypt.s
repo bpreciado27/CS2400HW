@@ -30,8 +30,23 @@ MSG_COMPARE_BAD		DCB	"The words were NOT equal :(",&0		; Status message
 ; Structure:
 ;  -The main subroutine calls in sequence the encryption subroutine,
 ;    the decryption subroutine and the compare subroutine
+                        ADR r1, MSG             ; Get address of message.
 start
-
+                        LDR r0, [r1], #4        ; Iterate through each word.
+                        AND r2, r0, #&000000FF  ; Get the last byte.
+                        CMP r2, #0              ; Check for null      
+                        BEQ break               ; Break the loop
+                        STMFD sp!, {r0,r1}      ; Push routine registers
+                        BL encrypt              ; Call encrypt.
+                        MOV r3, r0              ; Save encrypted text.
+                        LDRFD sp!, {r0, r1}     ; Pop routinee registers.
+                        STMFD sp!, {r0,r1}      ; Push routine registers
+                        BL decrypt              ; Call encrypt.
+                        MOV r4, r0              ; Save encrypted text.
+                        LDRFD sp!, {r0, r1}     ; Pop routinee registers.
+                        B start                 ; Loop back 
+break
+                        SWI SWI_Exit            ; Exit the program.
 ; Takes a word and encrypts it.
 ;
 ; Outline:
