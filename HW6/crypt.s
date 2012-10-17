@@ -39,11 +39,11 @@ start
                         STMFD sp!, {r0,r1}      ; Push routine registers
                         BL encrypt              ; Call encrypt.
                         MOV r3, r0              ; Save encrypted text.
-                        LDRFD sp!, {r0, r1}     ; Pop routinee registers.
+                        LDMFD sp!, {r0, r1}     ; Pop routinee registers.
                         STMFD sp!, {r0,r1}      ; Push routine registers
                         BL decrypt              ; Call encrypt.
                         MOV r4, r0              ; Save encrypted text.
-                        LDRFD sp!, {r0, r1}     ; Pop routinee registers.
+                        LDMFD sp!, {r0, r1}     ; Pop routinee registers.
                         B start                 ; Loop back 
 break
                         SWI SWI_Exit            ; Exit the program.
