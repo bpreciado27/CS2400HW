@@ -15,10 +15,13 @@
 SWI_WriteC		EQU 	&0						; Software interupt will write character in r0 to output
 SWI_Exit		EQU	&11						; Software interupt will exit the program
 MSG			DCB	"This is a secret!",&0,&0,&0			; Store secret message
-MSGOUT			DCB	"This the result!!",&0,&0,&0			; Store secret message
+MSG_ENCRYPTED		DCB	"This the result!!",&0,&0,&0			; Store secret message
+MSG_DECRYPTED		DCB	"This the result!!",&0,&0,&0			; Store secret message
 KEY			DCD	&F1A57D2B					; Encryption key
 MSG_XOR_MASK		DCB	"The result of XOR_mask:",&0			; Status message
 MSG_PERMUTATION		DCB	"The result of permutation:",&0			; Status message
+MSG_ENCRYPTION		DCB	"The word before encryption:",&0		; Status message
+MSG_DECRYPTION		DCB	"The word before decryption:",&0		; Status message
 			ALIGN
 
 			ENTRY
@@ -27,17 +30,91 @@ MSG_PERMUTATION		DCB	"The result of permutation:",&0			; Status message
 ;    the decryption subroutine and the compare subroutine
 start
 
+; Takes a word and encrypts it.
+;
+; Outline:
+; . Prints message.
+; . Shows input.
+; . Calls permutation.
+; . Calls XOR_mask.
+;
+; @arg r0 is the word to encrypt.
+;
+; @return r0 is the encrypted word.
+;
+; Affected Addresses: r0
+;
 ; Structure:
 ;  -Calls print_string to show the input then calls permutation and XOR_mask
-encrypt
+encrypt			; Show input
+			STMFD sp!, {r0, lr}					; Push routine registers
+			ADR r0, MSG_ENCRYPTION					; Get the address to the message.
+			BL print_string						; Show message.
+			LDMFD sp!, {r0, lr}					; Pop routine registers
+			STMFD sp!, {r0, lr}					; Push routine registers
+			BL printhexa						; Show input.
+			LDMFD sp!, {r0, lr}					; Pop routine registers
+			; Encrypt word
+			STMFD sp!, {r0, lr}					; Push routine registers
+			BL crypt						; Call crypt
+			LDMFD sp!, {r0, lr}					; Pop routine registers
+			MOV pc, lr						; Return
 
+; Takes a word and decrypts it.
+;
+; Outline:
+; . Prints message.
+; . Shows input.
+; . Calls permutation.
+; . Calls XOR_mask.
+;
+; @arg r0 is the word to decrypt.
+;
+; @return r0 is the dencrypted word.
+;
+; Affected Addresses: r0
+;
 ; Structure:
 ;  -Calls print_string to show the input then calls permutation and XOR_mask
-decrypt
+decrypt			; Show input
+			STMFD sp!, {r0, lr}					; Push routine registers
+			ADR r0, MSG_DECRYPTION					; Get the address to the message.
+			BL print_string						; Show message.
+			LDMFD sp!, {r0, lr}					; Pop routine registers
+			STMFD sp!, {r0, lr}					; Push routine registers
+			BL printhexa						; Show input.
+			LDMFD sp!, {r0, lr}					; Pop routine registers
+			; Encrypt word
+			STMFD sp!, {r0, lr}					; Push routine registers
+			BL crypt						; Call crypt
+			LDMFD sp!, {r0, lr}					; Pop routine registers
+			MOV pc, lr						; Return
+
+; Because permutation and XOR_mask do not distinguish between encryption or decryption, they can be used
+;  abstractly for both operations. This routine will be called from decrypt and encrypt to do their
+;  respective operations. The benifit to me is less code maintainence.
+;
+; Outline
+; . Call permutation.
+; . Call XOR_mask.
+;
+; @arg r0 is the word to cryptify.
+;
+; @return r0 is the result.
+crypt			; Perform permutational swap
+			STMFD sp!, {r0, lr}					; Push routine registers
+			BL permutation						; Call permutation
+			LDMFD sp!, {r0, lr}					; Pop routine registers
+			; Mask the result with a key
+			STMFD sp!, {r0, lr}					; Push routine registers
+			BL XOR_mask						; Call XOR_mask
+			LDMFD sp!, {r0, lr}					; Pop routine registers
+			MOV pc, lr						; Return
 
 ; Structure:
 ;  -Calls print_string to show the results. 
 compare
+
 ; Accepts a word and swapps the bytes 1 with 4 and 2 with 3.
 ;
 ; Outline:
