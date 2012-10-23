@@ -1,5 +1,5 @@
-ZIPFILE=HW5_JoshGillham.zip
-PARAMS=-x *.zip -x *.O -x *.o -x HW5 -x *.png
+ZIPFILE=HW6_JoshGillham.zip
+PARAMS=-x *.zip -x *.O -x *.o -x HW6 -x *.png
 
 zip: $(ZIPFILE)
 
@@ -11,4 +11,4 @@ else
 endif
 
 clean:
-	rm -f *.zip *.o *.O HW3
+	rm -f *.zip *.o *.O HW6
